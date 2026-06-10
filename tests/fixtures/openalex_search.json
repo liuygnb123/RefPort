@@ -1,0 +1,24 @@
+{
+  "results": [
+    {
+      "id": "https://openalex.org/W1",
+      "doi": "https://doi.org/10.1234/example",
+      "title": "Circular Supply Chain Design",
+      "abstract_inverted_index": {
+        "Circular": [0],
+        "supply": [1],
+        "chains": [2]
+      },
+      "publication_year": 2024,
+      "authorships": [
+        {"author": {"display_name": "Ada Lovelace"}}
+      ],
+      "primary_location": {
+        "source": {"display_name": "Journal of Circularity"},
+        "pdf_url": "https://example.org/paper.pdf"
+      },
+      "open_access": {"is_oa": true},
+      "cited_by_count": 7
+    }
+  ]
+}

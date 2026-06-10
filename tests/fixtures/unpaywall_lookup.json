@@ -1,0 +1,13 @@
+{
+  "doi": "10.1234/example",
+  "title": "Circular Supply Chain Design",
+  "year": 2024,
+  "z_authors": [
+    {"given": "Ada", "family": "Lovelace"}
+  ],
+  "journal_name": "Journal of Circularity",
+  "best_oa_location": {
+    "url_for_pdf": "https://example.org/oa.pdf"
+  },
+  "is_oa": true
+}

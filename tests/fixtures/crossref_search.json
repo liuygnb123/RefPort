@@ -1,0 +1,18 @@
+{
+  "message": {
+    "items": [
+      {
+        "DOI": "10.5678/crossref",
+        "title": ["Closed-Loop Supply Chain Review"],
+        "abstract": "<jats:p>A review paper.</jats:p>",
+        "published-print": {"date-parts": [[2023, 5, 1]]},
+        "author": [
+          {"given": "Grace", "family": "Hopper"}
+        ],
+        "container-title": ["Supply Chain Journal"],
+        "URL": "https://doi.org/10.5678/crossref",
+        "is-referenced-by-count": 12
+      }
+    ]
+  }
+}
