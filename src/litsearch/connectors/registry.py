@@ -34,7 +34,7 @@ SOURCE_DEFINITIONS = [
         id="scopus",
         display_name="Scopus",
         requires=["api_key"],
-        capabilities=["metadata"],
+        capabilities=["metadata", "search", "doi_lookup"],
     ),
     SourceDefinition(
         id="wos",

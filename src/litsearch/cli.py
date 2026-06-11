@@ -44,9 +44,10 @@ def sources() -> None:
 @app.command()
 def search(
     query: str,
-    sources: Annotated[str, typer.Option(help="Comma-separated search sources.")] = (
-        "openalex,crossref"
-    ),
+    sources: Annotated[
+        str,
+        typer.Option(help="Comma-separated search sources: openalex,crossref,scopus."),
+    ] = "openalex,crossref",
     limit: Annotated[int, typer.Option(help="Maximum results per source.")] = 10,
     no_enrich: Annotated[
         bool,
@@ -54,7 +55,7 @@ def search(
     ] = False,
     json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
 ) -> None:
-    """Search open metadata sources and save results."""
+    """Search metadata sources and save results."""
 
     settings = get_settings()
     configure_logging(settings)

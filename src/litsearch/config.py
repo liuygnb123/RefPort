@@ -33,13 +33,14 @@ class Settings(BaseSettings):
 
     ieee_api_key: str | None = Field(default=None, repr=False)
     scopus_api_key: str | None = Field(default=None, repr=False)
+    scopus_inst_token: str | None = Field(default=None, repr=False)
     wos_api_key: str | None = Field(default=None, repr=False)
 
     def safe_dump(self) -> dict[str, Any]:
         """Return settings with credentials masked."""
 
         data = self.model_dump(mode="json")
-        for key in ("ieee_api_key", "scopus_api_key", "wos_api_key"):
+        for key in ("ieee_api_key", "scopus_api_key", "scopus_inst_token", "wos_api_key"):
             if data.get(key):
                 data[key] = SECRET_MASK
         if data.get("proxy_url"):

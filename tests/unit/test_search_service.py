@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from litsearch.config import Settings
 from litsearch.connectors.base import SourcePaper
 from litsearch.db.session import create_db_engine
-from litsearch.models import Paper, SearchRun, SearchRunStatus
+from litsearch.models import Paper, PaperSource, SearchResultItem, SearchRun, SearchRunStatus
 from litsearch.services.search_service import SearchService
 
 
@@ -56,3 +56,23 @@ def test_search_service_all_sources_failed_sets_run_failed(tmp_path):
     assert summary.total_saved == 0
     with Session(create_db_engine(settings)) as session:
         assert session.exec(select(SearchRun)).one().status == SearchRunStatus.failed
+
+
+def test_search_service_supports_scopus_results(tmp_path):
+    settings = Settings(db_url=f"sqlite:///{tmp_path / 'test.db'}", _env_file=None)
+    service = SearchService(
+        settings,
+        connectors={
+            "scopus": FakeConnector(
+                [SourcePaper(source="scopus", title="Circular Scopus", doi="10.1/scopus")]
+            ),
+        },
+    )
+
+    summary = service.search("circular", ["scopus"], limit=1)
+
+    assert summary.status == "succeeded"
+    assert summary.total_saved == 1
+    with Session(create_db_engine(settings)) as session:
+        assert session.exec(select(PaperSource)).one().source == "scopus"
+        assert session.exec(select(SearchResultItem)).one().source == "scopus"

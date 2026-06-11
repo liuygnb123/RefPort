@@ -27,12 +27,26 @@ def test_contact_email_is_fallback_for_public_sources():
 
 
 def test_api_keys_are_masked():
-    settings = Settings(ieee_api_key="secret-key", _env_file=None)
+    settings = Settings(
+        ieee_api_key="secret-key",
+        scopus_inst_token="inst-token",
+        _env_file=None,
+    )
 
     safe = settings.safe_dump()
 
     assert safe["ieee_api_key"] == "***"
+    assert safe["scopus_inst_token"] == "***"
     assert "secret-key" not in str(safe)
+    assert "inst-token" not in str(safe)
+
+
+def test_scopus_inst_token_loads_from_environment(monkeypatch):
+    monkeypatch.setenv("LITSEARCH_SCOPUS_INST_TOKEN", "inst-token")
+
+    settings = Settings(_env_file=None)
+
+    assert settings.scopus_inst_token == "inst-token"
 
 
 def test_proxy_password_is_masked():

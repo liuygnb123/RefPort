@@ -8,6 +8,7 @@ import httpx
 
 from litsearch.config import Settings
 from litsearch.exceptions import ConnectorError
+from litsearch.log_utils import mask_secret
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +47,13 @@ class HttpClient:
                         break
                 response.raise_for_status()
                 payload = response.json()
+        except httpx.HTTPStatusError as exc:
+            logger.debug("HTTP request failed for %s", url)
+            status_code = exc.response.status_code
+            raise ConnectorError(f"HTTP request failed with status {status_code}") from exc
         except httpx.HTTPError as exc:
             logger.debug("HTTP request failed for %s", url)
-            raise ConnectorError(f"HTTP request failed: {exc}") from exc
+            raise ConnectorError(f"HTTP request failed: {mask_secret(str(exc))}") from exc
         except ValueError as exc:
             raise ConnectorError("HTTP response was not valid JSON") from exc
 

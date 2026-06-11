@@ -52,6 +52,7 @@ def test_search_help_runs():
 
     assert result.exit_code == 0
     assert "--sources" in result.output
+    assert "scopus" in result.output
 
 
 def test_search_json_output_is_parseable(monkeypatch):

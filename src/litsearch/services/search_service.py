@@ -12,6 +12,7 @@ from litsearch.config import Settings
 from litsearch.connectors.base import SearchRequest, SourcePaper
 from litsearch.connectors.crossref import CrossrefConnector
 from litsearch.connectors.openalex import OpenAlexConnector
+from litsearch.connectors.scopus import ScopusConnector
 from litsearch.connectors.unpaywall import UnpaywallConnector
 from litsearch.db.session import create_db_engine, init_database
 from litsearch.exceptions import LitSearchValidationError
@@ -19,7 +20,7 @@ from litsearch.models import Paper, SearchResultItem, SearchRun, SearchRunStatus
 from litsearch.normalization import normalize_doi
 from litsearch.services.persistence import upsert_source_paper
 
-SEARCH_SOURCE_IDS = {"openalex", "crossref"}
+SEARCH_SOURCE_IDS = {"openalex", "crossref", "scopus"}
 DEFAULT_SEARCH_SOURCES = ["openalex", "crossref"]
 
 
@@ -57,6 +58,7 @@ class SearchService:
         self.connectors = connectors or {
             "openalex": OpenAlexConnector(settings),
             "crossref": CrossrefConnector(settings),
+            "scopus": ScopusConnector(settings),
         }
         self.unpaywall_connector = unpaywall_connector or UnpaywallConnector(settings)
 
@@ -72,7 +74,7 @@ class SearchService:
         if invalid:
             raise LitSearchValidationError(
                 "Unsupported search source(s): "
-                f"{', '.join(invalid)}. Phase 1 supports: openalex, crossref."
+                f"{', '.join(invalid)}. Supported search sources: openalex, crossref, scopus."
             )
         if limit < 1:
             raise LitSearchValidationError("limit must be greater than 0")

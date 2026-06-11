@@ -1,0 +1,29 @@
+{
+  "search-results": {
+    "entry": [
+      {
+        "eid": "2-s2.0-85123456789",
+        "dc:identifier": "SCOPUS_ID:85123456789",
+        "dc:title": "Circular supply chain resilience",
+        "dc:creator": "Lovelace, Ada",
+        "dc:description": "A Scopus abstract about circular supply chains.",
+        "prism:doi": "10.1016/example.2024.01.001",
+        "prism:publicationName": "Journal of Circular Supply Chains",
+        "prism:coverDate": "2024-02-15",
+        "citedby-count": "7",
+        "openaccess": "1",
+        "openaccessFlag": true,
+        "link": [
+          {
+            "@ref": "self",
+            "@href": "https://api.elsevier.com/content/abstract/scopus_id/85123456789"
+          },
+          {
+            "@ref": "scopus",
+            "@href": "https://www.scopus.com/inward/record.uri?eid=2-s2.0-85123456789"
+          }
+        ]
+      }
+    ]
+  }
+}
