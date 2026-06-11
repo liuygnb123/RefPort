@@ -95,3 +95,21 @@ def test_search_service_mixed_open_and_unconfigured_ieee_succeeds(tmp_path):
     assert summary.status == "succeeded"
     assert summary.total_saved == 1
     assert "ieee" in summary.errors
+
+
+def test_search_service_supports_wos_results(tmp_path):
+    settings = Settings(db_url=f"sqlite:///{tmp_path / 'test.db'}", _env_file=None)
+    service = SearchService(
+        settings,
+        connectors={
+            "wos": FakeConnector([SourcePaper(source="wos", title="Circular WOS", doi="10.1/wos")]),
+        },
+    )
+
+    summary = service.search("circular", ["wos"], limit=1)
+
+    assert summary.status == "succeeded"
+    assert summary.total_saved == 1
+    with Session(create_db_engine(settings)) as session:
+        assert session.exec(select(PaperSource)).one().source == "wos"
+        assert session.exec(select(SearchResultItem)).one().source == "wos"

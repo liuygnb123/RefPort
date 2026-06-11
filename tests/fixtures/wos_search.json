@@ -1,0 +1,38 @@
+{
+  "hits": [
+    {
+      "uid": "WOS:000123456789001",
+      "title": "Circular supply chain design for resilient manufacturing",
+      "identifiers": {
+        "doi": "10.1000/wos.example"
+      },
+      "source": {
+        "sourceTitle": "Journal of Web Science",
+        "publishYear": 2024
+      },
+      "publicationDate": "2024-03-01",
+      "names": {
+        "authors": [
+          {
+            "displayName": "Ada Lovelace"
+          },
+          {
+            "displayName": "Grace Hopper"
+          }
+        ]
+      },
+      "links": {
+        "record": "https://www.webofscience.com/wos/woscc/full-record/WOS:000123456789001"
+      },
+      "openAccess": {
+        "isOpenAccess": true
+      },
+      "citations": [
+        {
+          "db": "WOS",
+          "count": 9
+        }
+      ]
+    }
+  ]
+}

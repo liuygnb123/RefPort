@@ -46,7 +46,7 @@ def search(
     query: str,
     sources: Annotated[
         str,
-        typer.Option(help="Comma-separated search sources: openalex,crossref,ieee,scopus."),
+        typer.Option(help="Comma-separated search sources: openalex,crossref,ieee,scopus,wos."),
     ] = "openalex,crossref",
     limit: Annotated[int, typer.Option(help="Maximum results per source.")] = 10,
     no_enrich: Annotated[

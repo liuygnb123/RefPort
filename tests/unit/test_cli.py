@@ -54,6 +54,7 @@ def test_search_help_runs():
     assert "--sources" in result.output
     assert "ieee" in result.output
     assert "scopus" in result.output
+    assert "wos" in result.output
 
 
 def test_search_json_output_is_parseable(monkeypatch):

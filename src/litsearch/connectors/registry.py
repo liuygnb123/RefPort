@@ -40,7 +40,7 @@ SOURCE_DEFINITIONS = [
         id="wos",
         display_name="Web of Science",
         requires=["api_key"],
-        capabilities=["metadata"],
+        capabilities=["metadata", "search", "doi_lookup"],
     ),
 ]
 

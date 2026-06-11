@@ -1,8 +1,9 @@
 # RefPort
 
 Literature search CLI for metadata sources. The current implementation can search
-OpenAlex, Crossref, IEEE Xplore, and Scopus, normalize results, deduplicate by DOI or
-title/year, persist records to SQLite, and record each search run.
+OpenAlex, Crossref, IEEE Xplore, Scopus, and Web of Science, normalize results,
+deduplicate by DOI or title/year, persist records to SQLite, and record each
+search run.
 
 ## Commands
 
@@ -13,6 +14,7 @@ uv run litsearch db init
 uv run litsearch search "circular supply chain" --sources openalex,crossref --limit 5
 uv run litsearch search "circular supply chain" --sources ieee --limit 5 --json
 uv run litsearch search "circular supply chain" --sources scopus --limit 5 --json
+uv run litsearch search "circular supply chain" --sources wos --limit 5 --json
 uv run litsearch search "circular supply chain" --sources openalex,crossref --limit 5 --json
 uv run pytest
 uv run ruff check .
@@ -28,7 +30,5 @@ IEEE Xplore search uses the official IEEE Xplore Metadata API and requires
 `LITSEARCH_SCOPUS_API_KEY`. `LITSEARCH_SCOPUS_INST_TOKEN` is optional for
 institution-token setups. Commercial sources are not included in the default
 search sources, so request them explicitly with `--sources ieee` or
-`--sources scopus`.
-
-Web of Science remains listed as a reserved commercial metadata source, but its
-search connector is not enabled until API access is ready.
+`--sources scopus`. Web of Science Starter API search requires
+`LITSEARCH_WOS_API_KEY` and can be requested explicitly with `--sources wos`.
