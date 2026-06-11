@@ -58,21 +58,40 @@ def test_search_service_all_sources_failed_sets_run_failed(tmp_path):
         assert session.exec(select(SearchRun)).one().status == SearchRunStatus.failed
 
 
-def test_search_service_supports_scopus_results(tmp_path):
+def test_search_service_supports_commercial_source_results(tmp_path):
     settings = Settings(db_url=f"sqlite:///{tmp_path / 'test.db'}", _env_file=None)
     service = SearchService(
         settings,
         connectors={
-            "scopus": FakeConnector(
-                [SourcePaper(source="scopus", title="Circular Scopus", doi="10.1/scopus")]
+            "ieee": FakeConnector(
+                [SourcePaper(source="ieee", title="Circular IEEE", doi="10.1/ieee")]
             ),
         },
     )
 
-    summary = service.search("circular", ["scopus"], limit=1)
+    summary = service.search("circular", ["ieee"], limit=1)
 
     assert summary.status == "succeeded"
     assert summary.total_saved == 1
     with Session(create_db_engine(settings)) as session:
-        assert session.exec(select(PaperSource)).one().source == "scopus"
-        assert session.exec(select(SearchResultItem)).one().source == "scopus"
+        assert session.exec(select(PaperSource)).one().source == "ieee"
+        assert session.exec(select(SearchResultItem)).one().source == "ieee"
+
+
+def test_search_service_mixed_open_and_unconfigured_ieee_succeeds(tmp_path):
+    settings = Settings(db_url=f"sqlite:///{tmp_path / 'test.db'}", _env_file=None)
+    service = SearchService(
+        settings,
+        connectors={
+            "openalex": FakeConnector(
+                [SourcePaper(source="openalex", title="Circular Open", doi="10.1/open")]
+            ),
+            "ieee": FakeConnector(error=RuntimeError("IEEE Xplore API key is not configured")),
+        },
+    )
+
+    summary = service.search("circular", ["openalex", "ieee"], limit=1)
+
+    assert summary.status == "succeeded"
+    assert summary.total_saved == 1
+    assert "ieee" in summary.errors

@@ -28,7 +28,7 @@ SOURCE_DEFINITIONS = [
         id="ieee",
         display_name="IEEE Xplore",
         requires=["api_key"],
-        capabilities=["metadata"],
+        capabilities=["metadata", "search", "doi_lookup"],
     ),
     SourceDefinition(
         id="scopus",

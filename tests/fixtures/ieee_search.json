@@ -1,0 +1,27 @@
+{
+  "articles": [
+    {
+      "article_number": "9876543",
+      "title": "Circular supply chain optimization using digital twins",
+      "abstract": "A study of circular supply chain optimization.",
+      "doi": "10.1109/example.2024.9876543",
+      "publication_year": "2024",
+      "publication_date": "2024-05-12",
+      "authors": {
+        "authors": [
+          {
+            "full_name": "Ada Lovelace"
+          },
+          {
+            "full_name": "Grace Hopper"
+          }
+        ]
+      },
+      "publication_title": "IEEE Transactions on Engineering Management",
+      "html_url": "https://ieeexplore.ieee.org/document/9876543",
+      "pdf_url": "https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=9876543",
+      "access_type": "OPEN_ACCESS",
+      "citing_paper_count": "12"
+    }
+  ]
+}
