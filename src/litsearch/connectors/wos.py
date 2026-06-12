@@ -10,6 +10,24 @@ from litsearch.connectors.http import HttpClient
 from litsearch.exceptions import SourceNotConfiguredError
 
 WOS_DOCUMENTS_URL = "https://api.clarivate.com/apis/wos-starter/v1/documents"
+WOS_QUERY_FIELDS = {
+    "AI",
+    "AU",
+    "DO",
+    "DT",
+    "ED",
+    "GP",
+    "IS",
+    "OG",
+    "OO",
+    "PMID",
+    "PY",
+    "SO",
+    "SU",
+    "TI",
+    "TS",
+    "UT",
+}
 
 
 def _as_int(value: Any) -> int | None:
@@ -88,6 +106,16 @@ def _source_url(document: dict) -> str | None:
     return document.get("recordUrl") or document.get("wosUrl")
 
 
+def _wos_query(query: str) -> str:
+    """Return a WoS advanced-search query, preserving user-provided syntax."""
+
+    stripped = query.strip()
+    if any(stripped.upper().startswith(f"{field}=") for field in WOS_QUERY_FIELDS):
+        return stripped
+    escaped = stripped.replace('"', r"\"")
+    return f'TS=("{escaped}")'
+
+
 class WosConnector:
     """Search Web of Science Starter metadata through the official API."""
 
@@ -102,7 +130,8 @@ class WosConnector:
         payload = self.http_client.get_json(
             WOS_DOCUMENTS_URL,
             params={
-                "q": request.query,
+                "db": "WOS",
+                "q": _wos_query(request.query),
                 "limit": min(request.limit, 50),
                 "page": 1,
             },

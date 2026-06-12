@@ -37,11 +37,20 @@ def test_wos_connector_uses_endpoint_params_and_headers():
     connector.search(SearchRequest(query="circular", limit=100))
 
     assert client.url == WOS_DOCUMENTS_URL
-    assert client.params == {"q": "circular", "limit": 50, "page": 1}
+    assert client.params == {"db": "WOS", "q": "TS=(\"circular\")", "limit": 50, "page": 1}
     assert client.headers == {
         "Accept": "application/json",
         "X-ApiKey": "secret-key",
     }
+
+
+def test_wos_connector_preserves_advanced_query_syntax():
+    client = FakeHttpClient({"hits": []})
+    connector = WosConnector(Settings(wos_api_key="secret-key", _env_file=None), client)
+
+    connector.search(SearchRequest(query='TS=("circular supply chain") AND PY=2024', limit=5))
+
+    assert client.params["q"] == 'TS=("circular supply chain") AND PY=2024'
 
 
 def test_wos_connector_parses_search_fixture():
