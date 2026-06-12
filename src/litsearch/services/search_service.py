@@ -72,6 +72,9 @@ class SearchService:
         sources: list[str] | None = None,
         limit: int = 10,
         enrich_unpaywall: bool = True,
+        year_from: int | None = None,
+        year_to: int | None = None,
+        open_access_only: bool = False,
     ) -> SearchSummary:
         selected_sources = sources or DEFAULT_SEARCH_SOURCES
         invalid = [source for source in selected_sources if source not in SEARCH_SOURCE_IDS]
@@ -115,6 +118,8 @@ class SearchService:
                 total_raw += len(source_papers)
                 for rank, source_paper in enumerate(source_papers, start=1):
                     enriched = self._enrich(source_paper, enrich_unpaywall, errors)
+                    if not self._passes_filters(enriched, year_from, year_to, open_access_only):
+                        continue
                     paper = upsert_source_paper(session, enriched)
                     session.add(
                         SearchResultItem(
@@ -188,3 +193,18 @@ class SearchService:
             pdf_url=source_paper.pdf_url,
             is_open_access=source_paper.is_open_access,
         )
+
+    def _passes_filters(
+        self,
+        source_paper: SourcePaper,
+        year_from: int | None,
+        year_to: int | None,
+        open_access_only: bool,
+    ) -> bool:
+        if year_from is not None and (source_paper.publication_year or 0) < year_from:
+            return False
+        if year_to is not None and (source_paper.publication_year or 9999) > year_to:
+            return False
+        if open_access_only and source_paper.is_open_access is not True:
+            return False
+        return True

@@ -9,6 +9,7 @@ from litsearch.models._mixins import TimestampMixin
 if TYPE_CHECKING:
     from litsearch.models.author import PaperAuthor
     from litsearch.models.download import Download
+    from litsearch.models.library import LibraryItem, PaperTag
     from litsearch.models.source import PaperSource
     from litsearch.models.venue import Venue
 
@@ -29,3 +30,5 @@ class Paper(TimestampMixin, SQLModel, table=True):
     authors: list["PaperAuthor"] = Relationship(back_populates="paper")
     sources: list["PaperSource"] = Relationship(back_populates="paper")
     downloads: list["Download"] = Relationship(back_populates="paper")
+    library_item: Optional["LibraryItem"] = Relationship(back_populates="paper")
+    tags: list["PaperTag"] = Relationship(back_populates="paper")

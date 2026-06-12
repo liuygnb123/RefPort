@@ -113,3 +113,50 @@ def test_search_service_supports_wos_results(tmp_path):
     with Session(create_db_engine(settings)) as session:
         assert session.exec(select(PaperSource)).one().source == "wos"
         assert session.exec(select(SearchResultItem)).one().source == "wos"
+
+
+def test_search_service_applies_local_year_and_open_access_filters(tmp_path):
+    settings = Settings(db_url=f"sqlite:///{tmp_path / 'test.db'}", _env_file=None)
+    service = SearchService(
+        settings,
+        connectors={
+            "openalex": FakeConnector(
+                [
+                    SourcePaper(
+                        source="openalex",
+                        title="Keep",
+                        doi="10.1/keep",
+                        publication_year=2024,
+                        is_open_access=True,
+                    ),
+                    SourcePaper(
+                        source="openalex",
+                        title="Closed",
+                        doi="10.1/closed",
+                        publication_year=2024,
+                        is_open_access=False,
+                    ),
+                    SourcePaper(
+                        source="openalex",
+                        title="Old",
+                        doi="10.1/old",
+                        publication_year=2019,
+                        is_open_access=True,
+                    ),
+                ]
+            ),
+        },
+    )
+
+    summary = service.search(
+        "circular",
+        ["openalex"],
+        limit=3,
+        year_from=2020,
+        open_access_only=True,
+    )
+
+    assert summary.total_raw == 3
+    assert summary.total_saved == 1
+    with Session(create_db_engine(settings)) as session:
+        assert session.exec(select(Paper)).one().title == "Keep"

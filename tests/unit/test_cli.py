@@ -62,7 +62,16 @@ def test_search_json_output_is_parseable(monkeypatch):
         def __init__(self, settings):
             self.settings = settings
 
-        def search(self, query, sources, limit, enrich_unpaywall):
+        def search(
+            self,
+            query,
+            sources,
+            limit,
+            enrich_unpaywall,
+            year_from=None,
+            year_to=None,
+            open_access_only=False,
+        ):
             return SearchSummary(
                 search_run_id=1,
                 query=query,
@@ -87,3 +96,13 @@ def test_search_invalid_source_returns_non_zero():
     result = runner.invoke(app, ["search", "circular", "--sources", "unpaywall"])
 
     assert result.exit_code != 0
+
+
+def test_new_command_help_runs():
+    for command in ("searches", "papers", "library", "tags"):
+        result = runner.invoke(app, [command, "--help"])
+        assert result.exit_code == 0
+
+    result = runner.invoke(app, ["export", "--help"])
+    assert result.exit_code == 0
+    assert "--format" in result.output
