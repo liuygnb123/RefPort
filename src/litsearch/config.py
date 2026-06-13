@@ -22,6 +22,10 @@ class Settings(BaseSettings):
 
     db_url: str = "sqlite:///./data/litsearch.db"
     download_dir: Path = Path("./data/downloads")
+    paper_dir: Path = Path("./data/papers")
+    browser_snapshot_dir: Path = Path("./data/browser_snapshots")
+    browser_cdp_url: str | None = None
+    browser_headless: bool = True
     log_level: str = "INFO"
     http_timeout_seconds: int = 30
     proxy_url: str | None = None

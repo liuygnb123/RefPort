@@ -16,7 +16,10 @@ from litsearch.db.session import init_database, sqlite_path_from_url
 from litsearch.exceptions import LitSearchValidationError
 from litsearch.log_utils import configure_logging
 from litsearch.models import LibraryStatus
+from litsearch.services.browser_service import BrowserService
+from litsearch.services.download_service import DownloadService
 from litsearch.services.export_service import ExportFilters, ExportService
+from litsearch.services.file_service import FileService
 from litsearch.services.library_service import LibraryService
 from litsearch.services.query_service import PaperFilters, QueryService
 from litsearch.services.search_service import SearchService
@@ -28,6 +31,9 @@ searches_app = typer.Typer(help="Search history commands.")
 papers_app = typer.Typer(help="Paper library commands.")
 library_app = typer.Typer(help="Library item commands.")
 tags_app = typer.Typer(help="Tag commands.")
+browser_app = typer.Typer(help="Browser collection infrastructure.")
+downloads_app = typer.Typer(help="PDF download records.")
+files_app = typer.Typer(help="Downloaded paper files.")
 console = Console()
 
 
@@ -430,9 +436,226 @@ def export_cmd(
     typer.echo(f"Exported {summary.paper_count} papers to {summary.output_path}")
 
 
+@app.command("download")
+def download_cmd(
+    paper_id: int,
+    force: Annotated[
+        bool,
+        typer.Option("--force", help="Re-download even when a local file already exists."),
+    ] = False,
+    output_dir: Annotated[
+        Path | None,
+        typer.Option("--output-dir", help="Override the default paper file directory."),
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
+) -> None:
+    """Download an open-access PDF for a saved paper."""
+
+    result = _run_or_exit(
+        lambda: DownloadService(_settings()).download_paper(
+            paper_id,
+            force=force,
+            output_dir=output_dir,
+        )
+    )
+    if json_output:
+        _echo_json(result)
+        return
+    for key, value in result.model_dump().items():
+        console.print(f"{key}: {value}")
+
+
+@downloads_app.command("list")
+def downloads_list(
+    limit: Annotated[int, typer.Option(help="Maximum downloads to show.")] = 50,
+    json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
+) -> None:
+    """List PDF download records."""
+
+    downloads = DownloadService(_settings()).list_downloads(limit)
+    if json_output:
+        _echo_json([download.model_dump() for download in downloads])
+        return
+    table = Table("id", "paper_id", "status", "source", "file_path", "size_bytes", "error")
+    for download in downloads:
+        table.add_row(
+            str(download.id),
+            str(download.paper_id),
+            download.status,
+            download.source or "",
+            download.file_path or "",
+            str(download.size_bytes or ""),
+            download.error or "",
+        )
+    console.print(table)
+
+
+@downloads_app.command("get")
+def downloads_get(
+    download_id: int,
+    json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
+) -> None:
+    """Show one PDF download record."""
+
+    download = DownloadService(_settings()).get_download(download_id)
+    if not download:
+        typer.echo(f"Download not found: {download_id}", err=True)
+        raise typer.Exit(1)
+    if json_output:
+        _echo_json(download)
+        return
+    for key, value in download.model_dump().items():
+        console.print(f"{key}: {value}")
+
+
+@files_app.command("list")
+def files_list(
+    json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
+) -> None:
+    """List downloaded paper files that still exist locally."""
+
+    files = FileService(_settings()).list_files()
+    payload = [
+        {
+            "paper_id": item.paper_id,
+            "title": item.title,
+            "year": item.year,
+            "file_path": str(item.file_path),
+            "size_bytes": item.size_bytes,
+            "sha256": item.sha256,
+            "download_id": item.download_id,
+        }
+        for item in files
+    ]
+    if json_output:
+        _echo_json(payload)
+        return
+    table = Table("paper_id", "title", "year", "file_path", "size_bytes")
+    for item in files:
+        table.add_row(
+            str(item.paper_id),
+            item.title,
+            str(item.year or ""),
+            str(item.file_path),
+            str(item.size_bytes or ""),
+        )
+    console.print(table)
+
+
+@files_app.command("open")
+def files_open(paper_id: int) -> None:
+    """Open a downloaded PDF for a paper."""
+
+    path = _run_or_exit(lambda: FileService(_settings()).open_file(paper_id))
+    typer.echo(str(path))
+
+
+@browser_app.command("inspect")
+def browser_inspect(
+    url: str,
+    output_dir: Annotated[
+        Path | None,
+        typer.Option("--output-dir", help="Directory for HTML and screenshot snapshots."),
+    ] = None,
+    login_text: Annotated[
+        str | None,
+        typer.Option("--login-text", help="Text marker indicating a login wall."),
+    ] = None,
+    authenticated_text: Annotated[
+        str | None,
+        typer.Option("--authenticated-text", help="Text marker indicating logged-in state."),
+    ] = None,
+    screenshot: Annotated[
+        bool,
+        typer.Option("--screenshot/--no-screenshot", help="Capture a PNG screenshot."),
+    ] = True,
+    wait_milliseconds: Annotated[
+        int,
+        typer.Option("--wait-ms", help="Milliseconds to wait after DOM content loads."),
+    ] = 1500,
+    json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
+) -> None:
+    """Open a page and save browser diagnostics."""
+
+    snapshot = _run_or_exit(
+        lambda: BrowserService(_settings()).inspect_page(
+            url,
+            output_dir=output_dir,
+            login_text=login_text,
+            authenticated_text=authenticated_text,
+            screenshot=screenshot,
+            wait_milliseconds=wait_milliseconds,
+        )
+    )
+    payload = {
+        "url": snapshot.url,
+        "title": snapshot.title,
+        "login_state": snapshot.login_state,
+        "html_path": str(snapshot.html_path),
+        "screenshot_path": str(snapshot.screenshot_path) if snapshot.screenshot_path else None,
+    }
+    if json_output:
+        _echo_json(payload)
+        return
+    for key, value in payload.items():
+        console.print(f"{key}: {value}")
+
+
+@browser_app.command("downloads")
+def browser_downloads(
+    directory: Annotated[
+        Path | None,
+        typer.Option(
+            "--dir",
+            help="Browser download directory. Defaults to configured download_dir.",
+        ),
+    ] = None,
+    json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
+) -> None:
+    """List completed files in a browser download directory."""
+
+    downloads = BrowserService(_settings()).list_downloads(directory)
+    payload = [
+        {
+            "path": str(item.path),
+            "size_bytes": item.size_bytes,
+            "modified_at": item.modified_at,
+        }
+        for item in downloads
+    ]
+    if json_output:
+        _echo_json(payload)
+        return
+    table = Table("path", "size_bytes", "modified_at")
+    for item in downloads:
+        table.add_row(str(item.path), str(item.size_bytes), str(item.modified_at))
+    console.print(table)
+
+
+@browser_app.command("archive")
+def browser_archive(paper_id: int, file_path: Path) -> None:
+    """Record a browser-downloaded file in the downloads table."""
+
+    archived = _run_or_exit(
+        lambda: BrowserService(_settings()).archive_download(paper_id, file_path)
+    )
+    _echo_json(
+        {
+            "download_id": archived.download_id,
+            "paper_id": archived.paper_id,
+            "file_path": str(archived.file_path),
+            "sha256": archived.sha256,
+            "size_bytes": archived.size_bytes,
+        }
+    )
+
+
 app.add_typer(config_app, name="config")
 app.add_typer(db_app, name="db")
 app.add_typer(searches_app, name="searches")
 app.add_typer(papers_app, name="papers")
 app.add_typer(library_app, name="library")
 app.add_typer(tags_app, name="tags")
+app.add_typer(browser_app, name="browser")
+app.add_typer(downloads_app, name="downloads")
+app.add_typer(files_app, name="files")

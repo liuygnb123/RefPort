@@ -18,7 +18,7 @@ def test_temporary_sqlite_can_be_initialized_and_used(tmp_path):
         session.commit()
         stored = session.exec(select(Paper)).one()
 
-    assert revision == "0003_library_tags_exports"
+    assert revision == "0004_download_files"
     assert stored.title == "Test Paper"
     assert db_path.exists()
     assert "./data/litsearch.db" not in str(db_path)

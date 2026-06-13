@@ -35,6 +35,9 @@ def test_models_can_be_created_and_related():
             status=SearchRunStatus.succeeded,
         )
         download = Download(paper_id=paper.id, status=DownloadStatus.skipped)
+        download.attempted_urls = '["https://example.org/paper.pdf"]'
+        download.size_bytes = 123
+        download.mime_type = "application/pdf"
         session.add(link)
         session.add(source)
         session.add(search_run)
@@ -57,6 +60,7 @@ def test_models_can_be_created_and_related():
         source_id = source.id
         search_status = search_run.status
         download_status = download.status
+        download_size = download.size_bytes
         result_item_id = result_item.id
 
     assert stored.id is not None
@@ -66,4 +70,5 @@ def test_models_can_be_created_and_related():
     assert source_id is not None
     assert search_status == SearchRunStatus.succeeded
     assert download_status == DownloadStatus.skipped
+    assert download_size == 123
     assert result_item_id is not None
