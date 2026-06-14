@@ -1,6 +1,14 @@
 """SQLModel table definitions."""
 
 from litsearch.models.author import Author, PaperAuthor
+from litsearch.models.browser import (
+    BrowserImport,
+    BrowserLoginState,
+    BrowserPlatform,
+    BrowserSession,
+    BrowserSessionStatus,
+    BrowserSnapshotRecord,
+)
 from litsearch.models.download import Download, DownloadStatus
 from litsearch.models.library import LibraryItem, LibraryStatus, PaperTag, Tag
 from litsearch.models.paper import Paper
@@ -10,6 +18,12 @@ from litsearch.models.venue import Venue
 
 __all__ = [
     "Author",
+    "BrowserImport",
+    "BrowserLoginState",
+    "BrowserPlatform",
+    "BrowserSession",
+    "BrowserSessionStatus",
+    "BrowserSnapshotRecord",
     "Download",
     "DownloadStatus",
     "LibraryItem",

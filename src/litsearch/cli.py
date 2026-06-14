@@ -32,6 +32,7 @@ papers_app = typer.Typer(help="Paper library commands.")
 library_app = typer.Typer(help="Library item commands.")
 tags_app = typer.Typer(help="Tag commands.")
 browser_app = typer.Typer(help="Browser collection infrastructure.")
+browser_session_app = typer.Typer(help="Browser collection sessions.")
 downloads_app = typer.Typer(help="PDF download records.")
 files_app = typer.Typer(help="Downloaded paper files.")
 console = Console()
@@ -57,6 +58,32 @@ def _parse_paper_ids(value: str | None) -> list[int] | None:
         return [int(part.strip()) for part in value.split(",") if part.strip()]
     except ValueError as exc:
         raise LitSearchValidationError("paper ids must be comma-separated integers") from exc
+
+
+def _browser_session_payload(session) -> dict:
+    return {
+        "id": session.id,
+        "platform": session.platform,
+        "entry_url": session.entry_url,
+        "status": session.status,
+        "login_state": session.login_state,
+        "error": session.error,
+        "created_at": session.created_at.isoformat() if session.created_at else None,
+    }
+
+
+def _browser_snapshot_payload(snapshot) -> dict:
+    return {
+        "id": snapshot.id,
+        "session_id": snapshot.session_id,
+        "url": snapshot.url,
+        "title": snapshot.title,
+        "html_path": snapshot.html_path,
+        "screenshot_path": snapshot.screenshot_path,
+        "login_state": snapshot.login_state,
+        "blocked_reason": snapshot.blocked_reason,
+        "created_at": snapshot.created_at.isoformat() if snapshot.created_at else None,
+    }
 
 
 def _run_or_exit(func):
@@ -650,6 +677,152 @@ def browser_archive(paper_id: int, file_path: Path) -> None:
     )
 
 
+@browser_session_app.command("start")
+def browser_session_start(
+    platform: str,
+    url: str,
+    json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
+) -> None:
+    """Start a browser collection session."""
+
+    session = _run_or_exit(lambda: BrowserService(_settings()).start_session(platform, url))
+    payload = _browser_session_payload(session)
+    if json_output:
+        _echo_json(payload)
+        return
+    for key, value in payload.items():
+        console.print(f"{key}: {value}")
+
+
+@browser_session_app.command("list")
+def browser_session_list(
+    limit: Annotated[int, typer.Option(help="Maximum sessions to show.")] = 50,
+    json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
+) -> None:
+    """List browser collection sessions."""
+
+    sessions = BrowserService(_settings()).list_sessions(limit)
+    payload = [_browser_session_payload(session) for session in sessions]
+    if json_output:
+        _echo_json(payload)
+        return
+    table = Table("id", "platform", "status", "login_state", "entry_url", "created_at")
+    for item in payload:
+        table.add_row(
+            str(item["id"]),
+            item["platform"],
+            item["status"],
+            item["login_state"],
+            item["entry_url"],
+            item["created_at"] or "",
+        )
+    console.print(table)
+
+
+@browser_session_app.command("get")
+def browser_session_get(
+    session_id: int,
+    json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
+) -> None:
+    """Show one browser collection session."""
+
+    session = BrowserService(_settings()).get_session(session_id)
+    if not session:
+        typer.echo(f"Browser session not found: {session_id}", err=True)
+        raise typer.Exit(1)
+    payload = _browser_session_payload(session)
+    if json_output:
+        _echo_json(payload)
+        return
+    for key, value in payload.items():
+        console.print(f"{key}: {value}")
+
+
+@browser_app.command("snapshot")
+def browser_snapshot(
+    session_id: int,
+    login_text: Annotated[
+        str | None,
+        typer.Option("--login-text", help="Text marker indicating a login wall."),
+    ] = None,
+    authenticated_text: Annotated[
+        str | None,
+        typer.Option("--authenticated-text", help="Text marker indicating logged-in state."),
+    ] = None,
+    screenshot: Annotated[
+        bool,
+        typer.Option("--screenshot/--no-screenshot", help="Capture a PNG screenshot."),
+    ] = True,
+    wait_milliseconds: Annotated[
+        int,
+        typer.Option("--wait-ms", help="Milliseconds to wait after DOM content loads."),
+    ] = 1500,
+    json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
+) -> None:
+    """Capture a snapshot for a browser collection session."""
+
+    snapshot = _run_or_exit(
+        lambda: BrowserService(_settings()).capture_session_snapshot(
+            session_id,
+            login_text=login_text,
+            authenticated_text=authenticated_text,
+            screenshot=screenshot,
+            wait_milliseconds=wait_milliseconds,
+        )
+    )
+    payload = _browser_snapshot_payload(snapshot)
+    if json_output:
+        _echo_json(payload)
+        return
+    for key, value in payload.items():
+        console.print(f"{key}: {value}")
+
+
+@browser_app.command("parse")
+def browser_parse(
+    session_id: int,
+    json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
+) -> None:
+    """Parse the latest local HTML snapshot for a session."""
+
+    summaries = _run_or_exit(lambda: BrowserService(_settings()).parse_session(session_id))
+    payload = [summary.model_dump() for summary in summaries]
+    if json_output:
+        _echo_json(payload)
+        return
+    table = Table("title", "year", "doi", "source_url")
+    for item in payload:
+        table.add_row(
+            item["title"],
+            str(item["year"] or ""),
+            item["doi"] or "",
+            item["source_url"] or "",
+        )
+    console.print(table)
+
+
+@browser_app.command("import")
+def browser_import(
+    session_id: int,
+    json_output: Annotated[bool, typer.Option("--json", help="Output structured JSON.")] = False,
+) -> None:
+    """Import parsed candidates from the latest snapshot."""
+
+    summary = _run_or_exit(lambda: BrowserService(_settings()).import_session(session_id))
+    payload = {
+        "session_id": summary.session_id,
+        "snapshot_id": summary.snapshot_id,
+        "imported_count": summary.imported_count,
+        "paper_ids": summary.paper_ids,
+    }
+    if json_output:
+        _echo_json(payload)
+        return
+    for key, value in payload.items():
+        console.print(f"{key}: {value}")
+
+
+browser_app.add_typer(browser_session_app, name="session")
 app.add_typer(config_app, name="config")
 app.add_typer(db_app, name="db")
 app.add_typer(searches_app, name="searches")

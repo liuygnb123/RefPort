@@ -1,4 +1,6 @@
 import json
+from datetime import UTC, datetime
+from types import SimpleNamespace
 
 from typer.testing import CliRunner
 
@@ -123,6 +125,100 @@ def test_browser_downloads_json_lists_completed_files(tmp_path, monkeypatch):
     payload = json.loads(result.output)
     assert len(payload) == 1
     assert payload[0]["path"].endswith("paper.pdf")
+
+
+def test_browser_session_start_and_get_json(monkeypatch):
+    created_at = datetime(2026, 6, 13, tzinfo=UTC)
+
+    class FakeBrowserService:
+        def __init__(self, settings):
+            self.settings = settings
+
+        def start_session(self, platform, url):
+            return SimpleNamespace(
+                id=1,
+                platform=platform,
+                entry_url=url,
+                status="started",
+                login_state="unknown",
+                error=None,
+                created_at=created_at,
+            )
+
+        def get_session(self, session_id):
+            return SimpleNamespace(
+                id=session_id,
+                platform="generic",
+                entry_url="https://example.com",
+                status="started",
+                login_state="unknown",
+                error=None,
+                created_at=created_at,
+            )
+
+    monkeypatch.setattr("litsearch.cli.BrowserService", FakeBrowserService)
+
+    started = runner.invoke(
+        app,
+        ["browser", "session", "start", "generic", "https://example.com", "--json"],
+    )
+    fetched = runner.invoke(app, ["browser", "session", "get", "1", "--json"])
+
+    assert started.exit_code == 0
+    assert json.loads(started.output)["platform"] == "generic"
+    assert fetched.exit_code == 0
+    assert json.loads(fetched.output)["id"] == 1
+
+
+def test_browser_parse_json_fixed_shape(monkeypatch):
+    class FakeSummary:
+        def model_dump(self):
+            return {
+                "title": "Paper",
+                "authors": [],
+                "year": 2024,
+                "doi": None,
+                "source_url": "https://example.com",
+                "abstract": None,
+                "raw": {},
+            }
+
+    class FakeBrowserService:
+        def __init__(self, settings):
+            self.settings = settings
+
+        def parse_session(self, session_id):
+            return [FakeSummary()]
+
+    monkeypatch.setattr("litsearch.cli.BrowserService", FakeBrowserService)
+
+    result = runner.invoke(app, ["browser", "parse", "1", "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert list(payload[0]) == ["title", "authors", "year", "doi", "source_url", "abstract", "raw"]
+
+
+def test_browser_import_json(monkeypatch):
+    class FakeImportSummary:
+        session_id = 1
+        snapshot_id = 2
+        imported_count = 1
+        paper_ids = [3]
+
+    class FakeBrowserService:
+        def __init__(self, settings):
+            self.settings = settings
+
+        def import_session(self, session_id):
+            return FakeImportSummary()
+
+    monkeypatch.setattr("litsearch.cli.BrowserService", FakeBrowserService)
+
+    result = runner.invoke(app, ["browser", "import", "1", "--json"])
+
+    assert result.exit_code == 0
+    assert json.loads(result.output)["paper_ids"] == [3]
 
 
 def test_download_json_output(monkeypatch):

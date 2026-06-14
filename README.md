@@ -9,8 +9,9 @@ RIS, or CSV. RefPort can download and manage open-access PDFs when a saved
 paper has a public PDF URL, a public landing page advertises a PDF link, or
 OpenAlex/Unpaywall returns an open-access PDF location. Browser collection
 infrastructure is available for logged-in platform workflows: it can save page
-HTML/screenshot diagnostics, inspect download folders, and archive
-browser-downloaded files into the downloads table.
+HTML/screenshot diagnostics, manage browser collection sessions, parse saved
+HTML snapshots into paper candidates, import confirmed metadata, inspect
+download folders, and archive browser-downloaded files into the downloads table.
 
 ## Commands
 
@@ -42,6 +43,12 @@ uv run litsearch downloads get 1
 uv run litsearch files list
 uv run litsearch files open 1
 uv run litsearch browser inspect "https://scholar.google.com" --login-text "Sign in"
+uv run litsearch browser session start google_scholar "https://scholar.google.com/scholar?q=circular+supply+chain"
+uv run litsearch browser snapshot 1 --login-text "Sign in" --authenticated-text "My profile"
+uv run litsearch browser parse 1 --json
+uv run litsearch browser import 1
+uv run litsearch browser session list
+uv run litsearch browser session get 1 --json
 uv run litsearch browser downloads --dir ~/Downloads
 uv run litsearch browser archive 1 ~/Downloads/paper.pdf
 uv run litsearch search "circular supply chain" --sources ieee --limit 5 --json
@@ -91,3 +98,21 @@ uv run playwright install chromium
 
 Browser workflows are intended for user-controlled, legitimate sessions. RefPort
 does not automate credential entry, CAPTCHA solving, or access-control bypasses.
+
+The browser collection workflow is intentionally manual at the access boundary:
+
+```bash
+uv run litsearch browser session start generic "https://example.com"
+uv run litsearch browser snapshot 1
+uv run litsearch browser parse 1 --json
+uv run litsearch browser import 1
+```
+
+For platforms that require authentication, sign in yourself in the browser or
+via a configured `LITSEARCH_BROWSER_CDP_URL`, then capture a snapshot. If the
+snapshot contains login-wall, CAPTCHA, or unusual-traffic text, RefPort marks the
+session as `blocked_manual_action_required` and pauses until the user handles it.
+Parsers read only saved local HTML snapshots; default tests do not access Google
+Scholar, CNKI, Web of Science, Scopus, or IEEE pages. Phase 5 includes a generic
+parser plus minimal Google Scholar and CNKI parser skeletons, so parsed metadata
+should be reviewed before import.
